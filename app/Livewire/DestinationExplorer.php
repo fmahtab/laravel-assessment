@@ -19,9 +19,9 @@ class DestinationExplorer extends Component
         $this->filteredDestinations = $this->destinations;
     }
 
-    public function search()
+   public function search()
     {
-        $searchTerm = $this->searchTerm;
+        $searchTerm = trim($this->searchTerm);
 
         if (empty($searchTerm)) {
             $this->filteredDestinations = $this->destinations;
@@ -29,19 +29,21 @@ class DestinationExplorer extends Component
         }
 
         $this->filteredDestinations = array_filter($this->destinations, function ($destination) use ($searchTerm) {
-            return str_contains($destination['name'], $searchTerm) ||
-                str_contains($destination['country'], $searchTerm) ||
-                str_contains($destination['region'], $searchTerm) ||
-                str_contains($destination['cost_level'], $searchTerm) ||
-                str_contains(json_encode($destination['activities']), $searchTerm) ||
-                str_contains($destination['average_daily_budget'], $searchTerm);
+            return stripos($destination['name'], $searchTerm) !== false
+                || stripos($destination['country'], $searchTerm) !== false
+                || stripos($destination['region'], $searchTerm) !== false
+                || stripos($destination['cost_level'], $searchTerm) !== false
+                || stripos(json_encode($destination['activities']), $searchTerm) !== false
+                || stripos($destination['average_daily_budget'], $searchTerm) !== false;
         });
+        $this->useSortingLogic();
     }
 
     public function resetSearch()
     {
         $this->searchTerm = '';
         $this->filteredDestinations = $this->destinations;
+        $this->useSortingLogic();
     }
 
     public function sort($field)
@@ -52,17 +54,28 @@ class DestinationExplorer extends Component
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+        $this->useSortingLogic();
+    }
+
+    private function useSortingLogic()
+    {
+        if($this->sortField === ''){
+            return;
+        }
+        $field = $this->sortField;
 
         $sorted = $this->filteredDestinations;
-        usort($sorted, function ($a, $b) use ($field) {
-            if ($this->sortDirection === 'asc') {
-                return $a[$field] > $b[$field] ? 1 : -1;
-            } else {
-                return $a[$field] < $b[$field] ? 1 : -1;
+        usort($this->filteredDestinations, function ($a, $b) use ($field) {
+            $result = $a[$field] <=> $b[$field];
+
+            if ($this->sortDirection === 'desc') {
+                return -$result;
             }
+            return $result;
         });
-        $this->filteredDestinations = $sorted;
+
     }
+
 
     public function render()
     {
